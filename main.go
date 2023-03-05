@@ -33,7 +33,7 @@ func main() {
 
 	SJFSchedule(os.Stdout, "Shortest-job-first", processes)
 	//
-	//SJFPrioritySchedule(os.Stdout, "Priority", processes)
+	SJFPrioritySchedule(os.Stdout, "Priority", processes)
 	//
 	//RRSchedule(os.Stdout, "Round-robin", processes)
 }
@@ -75,8 +75,8 @@ func (a BurstTime) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a BurstTime) Less(i, j int) bool {return a[i].BurstDuration < a[j].BurstDuration}
 
 type Priority []Process
-func(p Priority) Len() int64 {
-	return int64(len(p))
+func(p Priority) Len() int {
+	return (len(p))
 }
 func(p Priority) Less(i, j int) bool{
 	return p[i].Priority < p[j].Priority
@@ -145,7 +145,7 @@ func FCFSSchedule(w io.Writer, title string, processes []Process) {
 	outputSchedule(w, schedule, aveWait, aveTurnaround, aveThroughput)
 }
 
-// func SJFPrioritySchedule(w io.Writer, title string, processes []Process) {}
+
 func SJFSchedule(w io.Writer, title string, processes []Process) {
 	var (
 		serviceTime     int64
@@ -218,6 +218,73 @@ func SJFSchedule(w io.Writer, title string, processes []Process) {
 	outputSchedule(w, schedule, aveWait, aveTurnaround, aveThroughput)
 
 }
+
+func SJFPrioritySchedule(w io.Writer, title string, processes []Process) {
+	var (
+		serviceTime     int64
+        totalWait       float64
+        totalTurnaround float64
+        lastCompletion  float64
+        waitingTime     int64
+        schedule        = make([][]string, len(processes))
+        gantt           = make([]TimeSlice, 0)
+        remaining       = make([]int64, len(processes))
+        completed       = make([]bool, len(processes))
+        waiting         = make([]int64, len(processes))
+        noComplete      int
+        totalTime       int64	
+	)
+	for i:=0; i<len(processes); i++ {
+		remaining[i] = processes[i].BurstDuration
+	}
+	for noComplete < len(processes) {
+		sort.Sort(Priority(processes))
+		for i:=0; i<len(processes); i++ {
+			p := processes[i]
+			if !completed[i] {
+				if remaining[i] == 0 {
+					completed[i] = true
+					noComplete++
+					totalTime += p.BurstDuration
+					totalTurnaround = float64(totalTime)
+					waiting[i] = totalTime - p.BurstDuration
+					waitingTime = waiting[i]
+					totalWait += float64(waitingTime)
+				} else {
+					remaining[i]--
+					totalTime++
+				}
+			}
+			completion :=processes[i].BurstDuration+processes[i].ArrivalTime+waitingTime
+			lastCompletion = float64(completion)
+			start := waitingTime + processes[i].ArrivalTime
+			schedule[i] = []string{
+                fmt.Sprint(processes[i].ProcessID),
+                fmt.Sprint(processes[i].Priority),
+                fmt.Sprint(processes[i].BurstDuration),
+                fmt.Sprint(processes[i].ArrivalTime),
+                fmt.Sprint(waitingTime),
+                fmt.Sprint(totalTurnaround),
+                fmt.Sprint(completion),
+            }
+			serviceTime += processes[i].BurstDuration
+			gantt = append(gantt, TimeSlice{
+				PID:   processes[i].ProcessID,
+				Start: start,
+				Stop:  serviceTime,
+			})
+		}
+	}
+	count := float64(len(processes))
+	aveWait := totalWait / count
+	aveTurnaround := totalTurnaround / count
+	aveThroughput := count / lastCompletion
+
+	outputTitle(w, title)
+	outputGantt(w, gantt)
+	outputSchedule(w, schedule, aveWait, aveTurnaround, aveThroughput)
+}
+
 
 func RRSchedule(w io.Writer, title string, processes []Process) {
 	var (
