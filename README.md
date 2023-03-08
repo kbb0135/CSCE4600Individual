@@ -53,3 +53,37 @@ A GitHub link to your project which includes:
 
 - `README.md` <- describes anything needed to build (optional)
 - `main.go` <- your scheduler
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Compiling the code
+- The code is generated in Go Language and the code was entirely modified in VS Code. To compile the code,
+Do the following steps
+-Download the code from the repository or clone it 
+- git clone "url"
+- Open the clone or download code in VS code
+-In terminal where go compiler is installed,
+ type "go run main.go example_processes.csv"
+- This will generate the output and save the output that is generated in output.txt
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Description on How the Code Works
+
+1 SJF Schedule
+- Shortest Job First(SJF) schedule the process based on the burst time which is the time required to complete the process. We then define BurstTime
+and sort key for sorting the process based on the burst duration time. 
+- In SJF schedule, we define some new parameters such as remaining, completed, and waiting to keep track of the remaining time, waiting time, and completed time. 
+In the loop, the process are scheduled until the process is completed. During the time in the loop for each process, it checks the remaining time, waiting time and updates
+the total waiting and turn around time. It will check if the remaining time is 0, the process is marked as completed and the average waiting time, turn around time, and different process are updated and provided in the output. Gant Scheduled is printed and output.txt is generated when the algorithm runs the code.\
+
+=============================================================================================================================================================================
+
+2 SJF Priority Schedule
+- Shortest Job First Priority schedule the process based on the priority  which is the time required to complete the process. If the bpth process has same priority, then it is determined by the process burst time.
+- We define the priority based on the process which uses len() to get the length of the process and swap method to sort the process based on the priority
+- In SJF Priority function, different parameters are defined as in SJF algorithm to keep track of the waiting time, remaing times and updates. It takes in a writer to output the results, a string as the title of the schedule, and a slice of Process structs.
+-In the loop, the process are scheduled based on the priority until the process is completed. During the time in the loop for each process, it checks the remaining time, waiting time and updates the total waiting and turn around time. It will check if the remaining time is 0, the process is marked as completed and the average waiting time, turn around time, and different process are updated and provided in the output. Gant Scheduled is printed and output.txt is generated when the algorithm runs the code.\
+
+============================================================================================================================================================================
+
+3 Round Robin Schedule
+- Round Robin Schedule schedule the process in a preemetive manner. The function takes in an output writer, a title string, and a slice of processes as input arguments. Different parameters are defined such as waitinf time, remaining rime , totalTime and so on to make sure that the output can be generated correctly. Quantum is also set to 2.\
+- In the RoundRobin Function, the function iterates if all the functions have been completed. If both of the conditions are satisfied, the function checks for if the remaing time is greater than quantum time. If it is, thn the quantum time is subtracted and the total time is incremented by the quantum time. If not, process is marked as completed. After that different parameters such as waitingTime, totalTime, remaining times are calculated. Once all the paramters are calculated, output is generated and the function is the terminal and saved in output.txt file
