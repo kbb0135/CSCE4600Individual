@@ -27,6 +27,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	file, err := os.Create("output.txt")
+	if err != nil {
+		fmt.Println("Error creating output", err)
+		return
+	}
+	defer file.Close()
+	w := io.MultiWriter(os.Stdout, file)
 
 	// First-come, first-serve scheduling
 	FCFSSchedule(os.Stdout, "First-come, first-serve", processes)
@@ -35,7 +42,18 @@ func main() {
 	//
 	SJFPrioritySchedule(os.Stdout, "Priority", processes)
 	//
-	//RRSchedule(os.Stdout, "Round-robin", processes)
+	RRSchedule(os.Stdout, "Round-robin", processes)
+	
+	//Saving the output in output.txt file
+
+	FCFSSchedule(w, "First-come, first-serve", processes)
+
+	SJFSchedule(w, "Shortest-job-first", processes)
+	//
+	SJFPrioritySchedule(w, "Priority", processes)
+	//
+	RRSchedule(w, "Round-robin", processes)
+	
 }
 
 func openProcessingFile(args ...string) (*os.File, func(), error) {
@@ -258,15 +276,18 @@ func SJFPrioritySchedule(w io.Writer, title string, processes []Process) {
 			completion :=processes[i].BurstDuration+processes[i].ArrivalTime+waitingTime
 			lastCompletion = float64(completion)
 			start := waitingTime + processes[i].ArrivalTime
-			schedule[i] = []string{
-                fmt.Sprint(processes[i].ProcessID),
-                fmt.Sprint(processes[i].Priority),
-                fmt.Sprint(processes[i].BurstDuration),
-                fmt.Sprint(processes[i].ArrivalTime),
-                fmt.Sprint(waitingTime),
-                fmt.Sprint(totalTurnaround),
-                fmt.Sprint(completion),
-            }
+			if i < len(schedule) {
+				schedule[i] = []string{
+					fmt.Sprint(processes[i].ProcessID),
+					fmt.Sprint(processes[i].Priority),
+					fmt.Sprint(processes[i].BurstDuration),
+					fmt.Sprint(processes[i].ArrivalTime),
+					fmt.Sprint(waitingTime),
+					fmt.Sprint(totalTurnaround),
+					fmt.Sprint(completion),
+				}
+			}
+			
 			serviceTime += processes[i].BurstDuration
 			gantt = append(gantt, TimeSlice{
 				PID:   processes[i].ProcessID,
@@ -289,48 +310,63 @@ func SJFPrioritySchedule(w io.Writer, title string, processes []Process) {
 func RRSchedule(w io.Writer, title string, processes []Process) {
 	var (
 		serviceTime     int64
-		totalWait       float64
-		totalTurnaround float64
-		lastCompletion  float64
-		waitingTime     int64
-		schedule        = make([][]string, len(processes))
-		gantt           = make([]TimeSlice, 0)
+        totalWait       float64
+        totalTurnaround float64 
+        lastCompletion  float64
+        waitingTime     int64
+        schedule        = make([][]string, len(processes))
+        gantt           = make([]TimeSlice, 0)
+        remaining       = make([]int64, len(processes))
+        waiting         = make([]int64, len(processes))
+        noComplete      int
+        totalTime       int64	
 		
-	
 	)
-
-	//Getting the arrival time of the processor
-	// for i := range processes {
-		// arrTime[1] = processes[1].ArrivalTime
-		// burstTime[1] = processes[1].BurstDuration
-	// }
-	
-	for i := range processes {
-		if processes[i].ArrivalTime > 0 {
-			waitingTime = serviceTime - processes[i].ArrivalTime
+	var quantum int64 
+	quantum=2
+	//fmt.Print("Entering quantum time = ",quantum);
+	//fmt.Scanln(&quantum)
+	fmt.Println("Quantum time set as :  ", quantum)
+	for i:=range processes {
+		remaining[i] = processes[i].BurstDuration
+	}
+	for noComplete < len(processes) {
+		for i:=0; i<len(processes) && i<len(remaining); i++ {
+			p := &processes[i]
+			if p.ArrivalTime > totalTime || remaining[i] == 0 {
+				continue
+			}
+			if remaining[i] > quantum {
+				remaining[i] -= quantum
+				totalTime += quantum
+			} else {
+				totalTime += remaining[i]
+				remaining[i] = 0
+				noComplete++
+				waiting[i] = totalTime-p.BurstDuration-p.ArrivalTime
+				waitingTime = waiting[i]
+				totalTurnaround = float64(totalTime)
+				totalWait += float64(waitingTime)
+			}
+			completion := totalTime
+			lastCompletion = float64(completion)
+			start := p.ArrivalTime + waitingTime
+			schedule[i] = []string{
+                fmt.Sprint(processes[i].ProcessID),
+                fmt.Sprint(processes[i].Priority),
+                fmt.Sprint(processes[i].BurstDuration),
+                fmt.Sprint(processes[i].ArrivalTime),
+                fmt.Sprint(waitingTime),
+                fmt.Sprint(totalTurnaround),
+                fmt.Sprint(completion),
+            }
+			serviceTime += p.BurstDuration
+			gantt = append(gantt, TimeSlice{
+				PID:   processes[i].ProcessID,
+				Start: start,
+				Stop:  serviceTime,
+			})
 		}
-		totalWait += float64(waitingTime)
-		completion := processes[i].BurstDuration + processes[i].ArrivalTime + waitingTime
-		lastCompletion = float64(completion)
-		turnaround := lastCompletion - float64(processes[i].ArrivalTime)
-		totalTurnaround = float64(turnaround)
-		start := waitingTime + processes[i].ArrivalTime
-		schedule[i] = []string{
-			fmt.Sprint(processes[i].ProcessID),
-			fmt.Sprint(processes[i].Priority),
-			fmt.Sprint(processes[i].BurstDuration),
-			fmt.Sprint(processes[i].ArrivalTime),
-			fmt.Sprint(waitingTime),
-			fmt.Sprint(turnaround),
-			fmt.Sprint(completion),
-		}
-		serviceTime += processes[i].BurstDuration
-
-		gantt = append(gantt, TimeSlice{
-			PID:   processes[i].ProcessID,
-			Start: start,
-			Stop:  serviceTime,
-		})
 	}
 	count := float64(len(processes))
 	aveWait := totalWait / count
@@ -341,7 +377,6 @@ func RRSchedule(w io.Writer, title string, processes []Process) {
 	outputGantt(w, gantt)
 	outputSchedule(w, schedule, aveWait, aveTurnaround, aveThroughput)
 }
-
 //endregion
 
 //region Output helpers
