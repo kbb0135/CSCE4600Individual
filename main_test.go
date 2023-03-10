@@ -12,7 +12,6 @@ import (
 	"testing/iotest"
 )
 
-
 func TestFCFSSchedule(t *testing.T) {
 	t.Parallel()
 	type args struct {
@@ -48,7 +47,6 @@ func TestFCFSSchedule(t *testing.T) {
 					},
 				},
 				title: "First-come, First-serve",
-				
 			},
 			wantOut: loadFixture(t, "fcfs_test.txt"),
 		},

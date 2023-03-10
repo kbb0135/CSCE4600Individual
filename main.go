@@ -27,13 +27,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	file, err := os.Create("output.txt")
-	if err != nil {
-		fmt.Println("Error creating output", err)
-		return
-	}
-	defer file.Close()
-	w := io.MultiWriter(os.Stdout, file)
 
 	// First-come, first-serve scheduling
 	FCFSSchedule(os.Stdout, "First-come, first-serve", processes)
@@ -45,14 +38,6 @@ func main() {
 	RRSchedule(os.Stdout, "Round-robin", processes)
 
 	//Saving the output in output.txt file
-
-	FCFSSchedule(w, "First-come, first-serve", processes)
-
-	SJFSchedule(w, "Shortest-job-first", processes)
-	//
-	SJFPrioritySchedule(w, "Priority", processes)
-	//
-	RRSchedule(w, "Round-robin", processes)
 
 }
 
@@ -125,7 +110,6 @@ func FCFSSchedule(w io.Writer, title string, processes []Process) {
 	for i := range processes {
 		if processes[i].ArrivalTime > 0 {
 			waitingTime = serviceTime - processes[i].ArrivalTime
-			fmt.Println("wait=", waitingTime)
 		}
 		totalWait += float64(waitingTime)
 
@@ -234,6 +218,7 @@ func SJFSchedule(w io.Writer, title string, processes []Process) {
 	count := float64(len(processes))
 	fmt.Println("Count and Total Wait")
 	fmt.Println(count)
+	totalWait = float64(waiting[0]+waiting[1]+waiting[2])
 	fmt.Println(totalWait)
 	aveWait := totalWait / count
 	aveTurnaround := totalTurnaround / count
