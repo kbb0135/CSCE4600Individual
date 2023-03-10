@@ -27,7 +27,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	// First-come, first-serve scheduling
 	FCFSSchedule(os.Stdout, "First-come, first-serve", processes)
 
